@@ -102,54 +102,41 @@ def toJSON(data, classes, data_wire = None):
 
 # Component json
 def componentJSON(devices: List[Component], freeNodes: List[FreeNode]):
-
     # components json
     devices_json = []
     devices_uuid = {}
     num_nodes = []
     for i, d in enumerate(devices):
-        
         x1, y1, x2, y2 = d.x_top_left, d.y_top_left, d.x_bottom_right, d.y_bottom_right
 
-        # get class name from label (0 - 10)
-        # print("", d.class_component)
-        className = get_class_mapping(int(d.class_component))
-        
-        if className in ["junction"]:
+        # Use the class name directly from the component
+        className = d.type  # Use type directly instead of class_component and get_class_mapping
+
+        if className == "junction":
             nodes = 1
-        elif className in ["text"]:
+        elif className == "text":
             continue
-        # elif className == "transformer":
-        #     nodes = 4
         else:
             nodes = 2
         num_nodes.append(nodes)
-        # 3(transformer) - 2 up and 2 down
-        # 8, 9 - 2 down
-        # rest - 2 nodes(1 up, 1 down)
 
         deviceId = d.uuid
-        if(nodes == 2):
+        if nodes == 2:
             node_uuids = [d.uuid_endpoint_left, d.uuid_endpoint_right]
-        elif(nodes == 1):
+        elif nodes == 1:
             node_uuids = [d.uuid_endpoint_left]
 
         device = {
             "nodes": node_uuids,
             "deviceId": deviceId,
-            "position":{
+            "position": {
                 "x": ((x1+x2)/6),
                 "y": 0,
                 "z": ((1-y1-y2)/6),
-                
-                
             },
             "rotation": 90.0,
             "deviceType": className,
-            
         }
-        # devices_uuid[deviceId] = device
-
         devices_json.append(device)
 
     for fn in freeNodes:
@@ -211,4 +198,4 @@ def wiresJSON(wires: List[Wire]):
 # if __name__ == "__main__":
 #     r, classes = extract_pred(r'C:\Users\HP\Desktop\wire_images\AC-Voltage-Detector-Circuit.png')
 #     print(type(r))
-#     print(toJSON(r, classes)) 
+#     print(toJSON(r, classes))

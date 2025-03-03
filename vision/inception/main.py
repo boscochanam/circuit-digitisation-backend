@@ -3,6 +3,8 @@ from typing import List, Tuple, Dict
 import math
 import uuid
 import json
+
+from loguru import logger
 from vision.inception.classes import Component, Wire, FreeNode
 from vision.inception.calculations import calculate_avg_component_area
 from vision.inception.temp import match_wire_device_points, match_wire_points, conversion_to_freenodes
@@ -11,10 +13,8 @@ from vision.class_map import get_class_mapping
 def classInitialisation(
     data_device: Dict[str, Tuple[float, float, float, float]],
     data_wire: Dict[str, Tuple[float, float, float, float, float]],
-    # device_uuids: Dict[str, List[str]],
     image_size: List[Tuple[str, str]],
-    classes: List[str],
-    # average_area: float,
+    classes: List[str]
 ) -> Tuple[List[Component], List[Wire], List[FreeNode]]:
     """ Initialize the classes and the data. """
 
@@ -24,11 +24,11 @@ def classInitialisation(
 
     for i, device in enumerate(data_device):
         print(f"Device: {device} with class: {classes[i]}")
-        if get_class_mapping(int(classes[i])) == "junction":
+        # Use the class name directly without conversion
+        if classes[i] == "junction":  # Compare string directly
             print("Found a free node")
             x_top_left, y_top_left, x_bottom_right, y_bottom_right = data_device[device]
             
-            # x, y = (x_top_left + x_bottom_right) / 2, (y_top_left + y_bottom_right) / 2
             freenode_uuid = str(uuid.uuid4())
             freenode = FreeNode(freenode_uuid, x_top_left, y_top_left, x_bottom_right, y_bottom_right)
             freenode_list.append(freenode)
@@ -79,10 +79,10 @@ def inceptionFunction(data_device, data_wire, image_size, classes):
     while(iters > 0):
         iters-=1
 
-        min_dist = 0.75 * avg_area
-        print("Min dist: " , min_dist)
+        # Use half of the average component area for joining threshold
+        min_dist = 0.1 * avg_area  # Changed from 1.5 to 0.5
+        logger.debug(f"Using joining threshold of {min_dist} (half of average component area: {avg_area})")
         
-     
         # parents = {k: k for k in nodes.keys()}
         parents = {}
         for k in nodes.keys():
@@ -103,21 +103,23 @@ def inceptionFunction(data_device, data_wire, image_size, classes):
                     continue
                 if(belongs[k1] == belongs[k2]): continue
                 d = calculate_distance(p1, p2)
+                # Add all close nodes, not just the closest one
                 if d < min_dist:
-                    # Check if same device or same wire
                     distSort.append((d, k2))
 
+            # Sort by distance and take the N closest points
             distSort.sort()
+            max_connections = 3  # Allow more connections per node
             
-            if(len(distSort) > 0):
-                if(k1 not in graph):
-                    graph[k1] = [distSort[0][1]]
+            for dist, k2 in distSort[:max_connections]:
+                if k1 not in graph:
+                    graph[k1] = [k2]
                 else:
-                    graph[k1].append(distSort[0][1])
-                if(distSort[0][1] not in graph):
-                    graph[distSort[0][1]] = [k1]
+                    graph[k1].append(k2)
+                if k2 not in graph:
+                    graph[k2] = [k1]
                 else:
-                    graph[distSort[0][1]].append(k1)
+                    graph[k2].append(k1)
         
         print("created graph")
         
@@ -164,37 +166,47 @@ def inceptionFunction(data_device, data_wire, image_size, classes):
 
         
 
+    # Modify junction detection logic
     junctions = set()
     deviceNodes = set()
+    nodePositions = {}  # Store positions for close node detection
+    
+    # First pass: collect all device nodes and their positions
     for d in devices:
         deviceNodes.add(d.uuid_endpoint_left)
         deviceNodes.add(d.uuid_endpoint_right)
+        nodePositions[d.uuid_endpoint_left] = (d.x_top_left, (d.y_top_left + d.y_bottom_right)/2)
+        nodePositions[d.uuid_endpoint_right] = (d.x_bottom_right, (d.y_top_left + d.y_bottom_right)/2)
 
+    # Second pass: check wire endpoints
     for w in wires:
-        if(w.uuid_endpoint_left not in deviceNodes):
+        left_pos = w.get_endpoint_left()
+        right_pos = w.get_endpoint_right()
+        
+        # Check if wire endpoints are close to device nodes
+        left_close = False
+        right_close = False
+        
+        for device_node in deviceNodes:
+            if calculate_distance(left_pos[1:], nodePositions[device_node]) < min_dist:
+                left_close = True
+            if calculate_distance(right_pos[1:], nodePositions[device_node]) < min_dist:
+                right_close = True
+                
+        if not left_close:
             junctions.add(w.uuid_endpoint_left)
-        if(w.uuid_endpoint_right not in deviceNodes):
+        if not right_close:
             junctions.add(w.uuid_endpoint_right)
+
+    # Create junction components
     junc_uuid = [str(uuid.uuid4()) for _ in range(len(junctions))]
     for i, j in enumerate(junctions):
-        temp = Component(junc_uuid[i], nodes[j][0], nodes[j][1], nodes[j][0], nodes[j][1], "10")
+        temp = Component(junc_uuid[i], nodes[j][0], nodes[j][1], nodes[j][0], nodes[j][1], "junction")
         temp.uuid_endpoint_left = j
         temp.uuid_endpoint_right = j
-        devices.append(temp)  
-    # print("Devices: ", devices[0])
-    # # print("Wires: ", wires)
-    # # print("Freenodes: ", freenodes)
-    # # pass 1 - from components to wires only
-    # match_wire_device_points(devices, wires, freenodes)
-
-    # # pass 2 - from wires => getting freenodes
-    # match_wire_points(devices, wires, freenodes)
-
-    # conversion of freenodes => merging wires
-    # conversion_to_freenodes(wires, devices, freenodes) 
+        devices.append(temp)
 
     return devices, wires
-    # return devices, wires, freenodes
 
     
 if __name__ == "__main__":

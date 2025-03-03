@@ -1,4 +1,4 @@
-import uuid
+from uuid import uuid4
 import math
 
 # def calc_attach(x_top_left, y_top_left, x_bottom_right, y_bottom_right, flag):
@@ -86,28 +86,25 @@ class Comp:
 
 # Component class inheriting from Base Component, with endpoints
 class Component(Comp):
-    def __init__(self, component_uuid, x_top_left, y_top_left, x_bottom_right, y_bottom_right, class_component):
-        # Initialize base class properties
-        super().__init__(component_uuid, x_top_left, y_top_left, x_bottom_right, y_bottom_right, class_component)
+    def __init__(self, uuid, x_top_left, y_top_left, x_bottom_right, y_bottom_right, type):
+        # Call parent constructor with type as class_component
+        super().__init__(uuid, x_top_left, y_top_left, x_bottom_right, y_bottom_right, type)
+        self.type = type  # Keep type separately for the Component class
+        self.uuid_endpoint_left = str(uuid4())
+        self.uuid_endpoint_right = str(uuid4())
         
-        # Initialize the endpoints for this component
-        self.uuid_endpoint_left = str(uuid.uuid4())
-        self.uuid_endpoint_right = str(uuid.uuid4())
-        
-        # Attachment flags for left and right endpoints
+        # Attachment flags
         self.is_attached_left = False
         self.is_attached_right = False
         self.is_attached_to_component_left = False
         self.is_attached_to_component_right = False
 
-    def get_uuid_endpoint_left(self):
-        return self.uuid_endpoint_left
-    
-    def get_uuid_endpoint_right(self):
-        return self.uuid_endpoint_right
+    # Explicitly add get_area method to ensure it's available
+    def get_area(self):
+        return abs(self.x_bottom_right - self.x_top_left) * abs(self.y_bottom_right - self.y_top_left)
 
     def __repr__(self):
-        return f"Subcomponent({self.uuid}, {self.class_component}, {self.uuid_endpoint_left}, {self.uuid_endpoint_right})"
+        return f"Component({self.uuid}, {self.type}, {self.uuid_endpoint_left}, {self.uuid_endpoint_right})"
 
 # Freenode class inheriting from Base Component with dynamic endpoints
 class FreeNode(Comp):
@@ -170,14 +167,14 @@ class FreeNode(Comp):
 
 class Wire:
     def __init__(self, angle, x_top_left, y_top_left, x_bottom_right, y_bottom_right):
-        self.uuid = str(uuid.uuid4()) # might need to take from param later
+        self.uuid = str(uuid4())
         self.angle = angle
         self.x_top_left = x_top_left
         self.y_top_left = y_top_left
         self.x_bottom_right = x_bottom_right
         self.y_bottom_right = y_bottom_right
-        self.uuid_endpoint_left = str(uuid.uuid4())
-        self.uuid_endpoint_right = str(uuid.uuid4())
+        self.uuid_endpoint_left = str(uuid4())
+        self.uuid_endpoint_right = str(uuid4())
         self.is_attached_left = False
         self.is_attached_right = False
         self.is_attached_to_component_left = False

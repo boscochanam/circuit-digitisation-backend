@@ -98,19 +98,18 @@ def toJSON(data, classes, data_wire = None):
 
 # Component json
 def deviceJSON(data_device, classes):
-
-    # components json
+    """Generate JSON for devices while preserving class names"""
     devices_json = []
     devices_uuid = {}
     num_nodes = []
+    
     for i, d in enumerate(data_device):
-        
         x1, y1, x2, y2 = map(float, d)
 
-        # get class name from label (0 - 10)
-        class_num = int(classes[i])
-        className = get_class_mapping(class_num)
+        # Use class name directly instead of converting to int
+        className = classes[i]  # Remove the int() conversion
         
+        # Determine number of nodes based on component type
         if className in ["text"]:
             continue
         elif className == "transformer":
@@ -118,14 +117,11 @@ def deviceJSON(data_device, classes):
         else:
             nodes = 2
         num_nodes.append(nodes)
-        # 3(transformer) - 2 up and 2 down
-        # 8, 9 - 2 down
-        # rest - 2 nodes(1 up, 1 down)
 
         deviceId = str(uuid.uuid4())
         device_uuid = [deviceId]
 
-        # adding nodes based on the component
+        # Add nodes based on the component
         for _ in range(nodes):
             new_node = str(uuid.uuid4())
             device_uuid.append(new_node)
@@ -133,21 +129,18 @@ def deviceJSON(data_device, classes):
         device = {
             "nodes": device_uuid[1:],
             "deviceId": deviceId,
-            "position":{
+            "position": {
                 "x": ((x1+x2)/2),
                 "y": 0,
                 "z": ((1-y1-y2)/2),
-                
-                
             },
             "rotation": 0.0,
             "deviceType": className,
-            
         }
-        # devices_uuid = [deviceId, node1, node2]
+        
         devices_uuid[deviceId] = device_uuid[1:]
-        # devices_uuid.append(device_uuid)
         devices_json.append(device)
+        
     return devices_json, devices_uuid, num_nodes
 
 # Wire json
@@ -190,4 +183,4 @@ def wireJSON(data_wire, wire_uuid):
 # if __name__ == "__main__":
 #     r, classes = extract_pred(r'C:\Users\HP\Desktop\wire_images\AC-Voltage-Detector-Circuit.png')
 #     print(type(r))
-#     print(toJSON(r, classes)) 
+#     print(toJSON(r, classes))

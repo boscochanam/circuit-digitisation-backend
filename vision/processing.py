@@ -27,9 +27,7 @@ import numpy as np
 #     return x1, y1, x2, y2
 
 # Extracts the predictions from the image (coordinates and classes) 
-def extract_pred(image):
-    model_path = "../models/component_nov.pt"
-    model = YOLO(model_path)
+def extract_pred(image, model):
 
     results = model(image)
     boxes = results[0].boxes.xyxyn
@@ -51,10 +49,7 @@ def extract_pred(image):
         for c in result.boxes.cls:
             classes.append(names[int(c)])
     
-    # print("coords: ", coords)
     return coords, classes, component_boxes
-    # print("r: ", r)
-    # print("classes: ", classes)
 
 if __name__ == "__main__":
     data = extract_pred(r"C:\Users\HP\Desktop\wire_images\AC-Voltage-Detector-Circuit.png")

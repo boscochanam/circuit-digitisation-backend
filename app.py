@@ -25,7 +25,7 @@ st.set_page_config(page_title="Circuit Detector", layout="wide")
 # Load models
 @st.cache_resource
 def load_models():
-    component_model = YOLO('models/98MAPbest.pt')
+    component_model = YOLO('models\Components\90mapROBOFLOW.pt')
     wire_model = YOLO('models/best_wire_new.pt')
     return component_model, wire_model
 

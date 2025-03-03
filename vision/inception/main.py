@@ -80,7 +80,7 @@ def inceptionFunction(data_device, data_wire, image_size, classes):
         iters-=1
 
         # Use half of the average component area for joining threshold
-        min_dist = 0.1 * avg_area  # Changed from 1.5 to 0.5
+        min_dist = 10 * avg_area  # Changed from 1.5 to 0.5
         logger.debug(f"Using joining threshold of {min_dist} (half of average component area: {avg_area})")
         
         # parents = {k: k for k in nodes.keys()}

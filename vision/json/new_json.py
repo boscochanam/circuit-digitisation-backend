@@ -108,6 +108,8 @@ def componentJSON(devices: List[Component], freeNodes: List[FreeNode]):
     num_nodes = []
     for i, d in enumerate(devices):
         x1, y1, x2, y2 = d.x_top_left, d.y_top_left, d.x_bottom_right, d.y_bottom_right
+        width = abs(x2 - x1)
+        height = abs(y2 - y1)
 
         # Use the class name directly from the component
         className = d.type  # Use type directly instead of class_component and get_class_mapping
@@ -136,6 +138,8 @@ def componentJSON(devices: List[Component], freeNodes: List[FreeNode]):
             },
             "rotation": 90.0,
             "deviceType": className,
+            "width": width,    # Add width
+            "height": height,  # Add height
         }
         devices_json.append(device)
 
